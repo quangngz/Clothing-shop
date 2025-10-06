@@ -4,20 +4,20 @@ require("dotenv").config();
 const SQL = `
 CREATE TABLE IF NOT EXISTS category (
     categoryID INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL UNIQUE,
     description VARCHAR(1000)
 );
 
 CREATE TABLE IF NOT EXISTS supplier (
     supplierID INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL UNIQUE,
     phone VARCHAR(20),
     address VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS product (
     productID INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    categoryID INTEGER,
+    categoryID INTEGER ,
     supplierID INTEGER,
     name VARCHAR(255) NOT NULL,
     brand VARCHAR(255),
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS transactions (
 
     FOREIGN KEY (customerID) REFERENCES customer(customerID)
         ON DELETE SET NULL
-        ON UPDATE CASACADE
+        ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS transactionItems (
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS transactionItems (
 async function main() {
   console.log("creating db...");
   const client = new Client({
-    connectionString: `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@localhost:5432/top_users`,
+    connectionString: `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@localhost:5432/clothing_shop`,
   });
   await client.connect();
   await client.query(SQL);
