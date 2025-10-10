@@ -26,7 +26,12 @@
       >
         Search
       </button>
+        <a href="/cart" 
+        class="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600 transition">
+        View Cart
+        </a>
     </form>
+
   </header>
   
   <main class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full max-w-6xl px-4">
@@ -44,7 +49,8 @@
             <div class="flex justify-between items-center mt-4">
               <p class="text-sm text-gray-500"><span class="font-medium">Stock:</span> <%= product.stock %></p>
               <button 
-                class="bg-indigo-500 text-white px-3 py-1 rounded-lg hover:bg-indigo-600 transition">
+                class="bg-indigo-500 text-white px-3 py-1 rounded-lg hover:bg-indigo-600 transition"
+                id = "add-to-cart-btn" onclick="addToCart('<%= product.productid %>')">
                 Add to Cart
               </button>
             </div>
@@ -53,9 +59,32 @@
       <% }) %>
     <% } else { %>
       <div class="col-span-full text-center text-gray-500 text-lg mt-10">
-        No products found 😔
+        No products found
       </div>
     <% } %>
   </main>
+
+  <script>
+    // Note: All product attributes are lowecase. 
+    async function addToCart(productId) {
+      console.log("productID is " + productId);
+      const response = await fetch("/cart/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId }),
+        credentials: "include"   // 🔑 important for session to work
+      });
+      const contentType = response.headers.get('content-type'); 
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new TypeError("Oops, we haven't got JSON!");
+      }
+      const result = await response.json();
+      if (result.success) {
+        alert("Item added to cart! Cart size: " + result.cartCount);
+      } else {
+        alert("Something went wrong.");
+      }
+    }
+  </script>
 </body>
 </html>

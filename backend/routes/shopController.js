@@ -1,33 +1,18 @@
 const db = require("../db/queries");
 const path = require("path");
 
-// Show shop page (renders EJS with products)
+// ShowShop sends the file to frontend. 
 exports.showShop = async (req, res, next) => {
     try {
         const products = await db.getAllProduct();
-        // render EJS if you have view engine configured, otherwise send JSON
-        // The project currently stores EJS in view/shop.ejs; render with products
-        return res.status(200).render("shop", {products: products});
-    } catch (err) {
-        next(err);
-    }
-};
-
-/* Display products as JSON (alternate handler) */
-exports.showProduct = async (req, res, next) => {
-    try {
-        const products = await db.getAllProduct();
-        if (products && products.length > 0) {
-            return res.status(200).json(products);
-        }
-        return res.status(200).send("No products found...");
+        return res.status(200).json({ products });
     } catch (err) {
         next(err);
     }
 };
 
 exports.createTransactionGET = async (req, res, next) => {
-    return res.sendFile(path.join(__dirname, "../view/buy.ejs"));
+    // return res.sendFile(path.join(__dirname, "../view/buy.ejs"));
 };
 
 exports.createTransactionPOST = async (req, res, next) => {
@@ -42,10 +27,10 @@ exports.createTransactionPOST = async (req, res, next) => {
         next(err);
     }
 };
-
-exports.restockGET = async (req, res, next) => {
-    res.render("restock");
-};
+// TODO: Links to react app
+// exports.restockGET = async (req, res, next) => {
+//     res.render("restock");
+// };
 
 exports.restockPOST = async (req, res, next) => {
     console.log(`Restock request body: ${JSON.stringify(req.body)}`);
@@ -70,8 +55,34 @@ exports.searchProducts = async (req, res, next) => {
     }
     try {
         const results = await db.searchProducts(q);
-        res.status(200).render("shop", {products: results, query: q || "" });
+        // res.status(200).render("shop", {products: results, query: q || "" });
     } catch (err) {
         next(err);
     }
+};
+
+
+// LOGIC of cart: Items will be stored per session, via items id. 
+// Only when the user make the transaction, will the items with those id be deducted in stock.
+// add to cart
+exports.addToCart = async (req, res) => {
+    if (!req.session.cart) req.session.cart = [];
+    console.log(req.body); 
+    const { productId } = req.body;
+    req.session.cart.push(productId); 
+
+    res.json({ success: true, cartCount: req.session.cart.length });
+};
+
+// view cart
+exports.viewCart = async (req, res) => {
+    const cartIDs = req.session.cart || []; 
+
+    // if (cartIDs.length === 0) {
+    //     return res.render("cart", { cart: [] }); 
+    // }
+
+    // fetch full product details using IDs from req.session.cart
+    const products = await db.getProductListByID(cartIDs)
+    res.render("cart", { cart: products });
 };

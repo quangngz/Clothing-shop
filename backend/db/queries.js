@@ -48,15 +48,22 @@ exports.createNewTransaction = async (customerID, items) => {
 };
 
 
+exports.getProductListByID = async (cartIDs) => {
+  if (!cartIDs || cartIDs.length === 0) return [];
 
-// exports.getProductInfo = async (productName) => {
-//   const { rows } = await pool.query(
-//     `SELECT * FROM product WHERE name = $1`,
-//     [productName]
-//   );
-//   return rows;
-// };
+  // Keep only valid integers
+  const validIDs = cartIDs
+    .map(id => parseInt(id))
+    .filter(id => !isNaN(id));
 
+  if (validIDs.length === 0) return [];
+
+  const placeholders = validIDs.map((_, i) => `$${i + 1}`).join(",");
+  const query = `SELECT * FROM product WHERE productID IN (${placeholders})`;
+
+  const { rows } = await pool.query(query, validIDs);
+  return rows;
+};
 exports.getCategoricalProduct = async (categoryName) => {
   const { rows } = await pool.query(
     `SELECT p.*, c.name AS category_name
@@ -69,7 +76,13 @@ exports.getCategoricalProduct = async (categoryName) => {
 };
 
 exports.getAllProduct = async () => {
-  const { rows } = await pool.query("SELECT * FROM product");
+  const { rows } = await pool.query(`SELECT p.*, c.name AS "categoryName", 
+    s.name AS "supplierName"
+      FROM product p
+      JOIN category c ON p.categoryID = c.categoryID
+      JOIN supplier s ON p.supplierID = s.supplierID
+      ORDER BY p.name ASC;
+      `);
   return rows;
 };
 
