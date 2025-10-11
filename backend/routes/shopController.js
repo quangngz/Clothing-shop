@@ -1,5 +1,6 @@
 const db = require("../db/queries");
 const path = require("path");
+const passport = require("../db/passport"); 
 
 // ShowShop sends the file to frontend. 
 exports.showShop = async (req, res, next) => {
@@ -27,10 +28,6 @@ exports.createTransactionPOST = async (req, res, next) => {
         next(err);
     }
 };
-// TODO: Links to react app
-// exports.restockGET = async (req, res, next) => {
-//     res.render("restock");
-// };
 
 exports.restockPOST = async (req, res, next) => {
     console.log(`Restock request body: ${JSON.stringify(req.body)}`);
@@ -55,7 +52,7 @@ exports.searchProducts = async (req, res, next) => {
     }
     try {
         const results = await db.searchProducts(q);
-        // res.status(200).render("shop", {products: results, query: q || "" });
+        return res.status(200).json(results); 
     } catch (err) {
         next(err);
     }
@@ -77,12 +74,34 @@ exports.addToCart = async (req, res) => {
 // view cart
 exports.viewCart = async (req, res) => {
     const cartIDs = req.session.cart || []; 
+        // console.log('Session cart IDs:', cartIDs);
 
-    // if (cartIDs.length === 0) {
-    //     return res.render("cart", { cart: [] }); 
-    // }
+    if (cartIDs.length === 0) {
+        return res.status(200).json({products: []}); 
+    }
 
-    // fetch full product details using IDs from req.session.cart
     const products = await db.getProductListByID(cartIDs)
-    res.render("cart", { cart: products });
+        // console.log('Products fetched:', products);
+
+    res.status(200).json({ products });
+};
+
+exports.addUser = async (req, res, next) => {
+    await db.addUser(req, res, next); 
+}
+
+exports.logIn = async (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+        if (err) return next(err);
+
+        if (!user) {
+        return res.status(401).json({ message: "Invalid username or password" });
+        }
+
+        req.logIn(user, (err) => {
+        if (err) return next(err);
+
+        return res.json({ user: { customerID: user.customerID, username: user.username } });
+        });
+    })(req, res, next);
 };

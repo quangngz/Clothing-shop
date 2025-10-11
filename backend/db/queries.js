@@ -1,4 +1,5 @@
 const pool = require("./pool");
+const bcrypt = require("bcryptjs"); 
 
 exports.getAllTransaction = async () => {
   const { rows } = await pool.query("SELECT * FROM transactions");
@@ -59,7 +60,11 @@ exports.getProductListByID = async (cartIDs) => {
   if (validIDs.length === 0) return [];
 
   const placeholders = validIDs.map((_, i) => `$${i + 1}`).join(",");
-  const query = `SELECT * FROM product WHERE productID IN (${placeholders})`;
+  const query = `SELECT product.*, category.name AS categoryName, supplier.name AS supplierName
+  FROM product
+  INNER JOIN category ON product.categoryID = category.categoryID 
+  INNER JOIN supplier ON product.supplierID = supplier.supplierID 
+  WHERE productID IN (${placeholders})`;
 
   const { rows } = await pool.query(query, validIDs);
   return rows;
@@ -213,3 +218,21 @@ exports.addProduct = async (product) => {
     client.release();
   }
 };
+
+exports.addUser = async (req, res, next) => {
+    try {
+    // const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
+    await pool.query("INSERT INTO customer (username, password, email, phoneNum, address) VALUES ($1, $2, $3, $4, $5)", [
+        req.body.username,
+        req.body.password,
+        req.body.email, 
+        req.body.phoneNum,
+        req.body.address,
+    ]);
+    res.status(201).json({ message: "User created successfully" });
+    } catch(err) {
+        next(err);
+    }
+}
+

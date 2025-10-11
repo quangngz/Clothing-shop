@@ -1,21 +1,25 @@
 const { Router } = require("express"); 
 const shopRouter = Router(); 
-
 const shopController = require("./shopController"); 
 
-shopRouter.get("/api", shopController.showShop); 
+
+shopRouter.get("/", shopController.showShop); 
 
 // Search route — query param `q` e.g. /search?q=sweater
-shopRouter.get("/api/search", shopController.searchProducts);
+shopRouter.get("/search", shopController.searchProducts);
 
 // End point for managers to restock. 
 // shopRouter.get("/restock", shopController.restockGET);
-shopRouter.post("/api/restock", shopController.restockPOST);
+shopRouter.post("/restock", shopController.restockPOST);
 
 // End points for user to buy stuff
-shopRouter.get("/api/buy", shopController.createTransactionGET); 
-shopRouter.post("/api/buy", shopController.createTransactionPOST); 
+shopRouter.get("/buy", shopController.createTransactionGET); 
+shopRouter.post("/buy", shopController.createTransactionPOST); 
 
-// shopRouter.get("/api/cart", shopController.viewCart); 
-shopRouter.post("/api/cart/add", shopController.addToCart); 
+shopRouter.get("/cart", shopController.viewCart); 
+shopRouter.post("/cart/add", shopController.addToCart); 
+
+shopRouter.post("/sign-up", shopController.addUser); 
+shopRouter.post("/log-in", shopController.logIn); 
+
 module.exports = shopRouter;

@@ -5,8 +5,10 @@ import './pages.css'
 export default function Shop() {
   const [products, setProducts] = useState([]);
 
+  
+
   useEffect(() => {
-    fetch("http://localhost:5000/api")
+    fetch("http://localhost:5000/")
       .then(res => res.json())
       .then(data => setProducts(data.products));
   }, []);
@@ -24,7 +26,7 @@ export default function Shop() {
 
 /** Function to handle adding item to card**/
 async function addToCart(productId) {
-  const response = await fetch("http://localhost:5000/api/cart/add", {
+  const response = await fetch("http://localhost:5000/cart/add", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ productId }),
@@ -44,7 +46,7 @@ async function addToCart(productId) {
 }
 
 
-function ItemCard (product) {
+export function ItemCard (product) {
   return (
     <div key={product.productid} className="product-card">
       <h2>{product.name}</h2>
