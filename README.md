@@ -1,5 +1,7 @@
 # Clothing-shop
 A basic clothing shop management system.  
+
+Deployment coming soon...
 ## Database requirement: 
 - Keeps track of each item's stock, price, supplier's. 
 
