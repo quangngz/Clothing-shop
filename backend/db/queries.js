@@ -1,74 +1,127 @@
 const pool = require("./pool");
 const bcrypt = require("bcryptjs"); 
 
-exports.getAllTransaction = async () => {
-  const { rows } = await pool.query("SELECT * FROM transactions");
-  return rows;
-};
+// exports.getAllTransaction = async () => {
+//   const { rows } = await pool.query(`SELECT quantity, p.* FROM transactions t 
+//     INNER JOIN transactionitems ti ON ti.transactionid = t.transactionid
+//     INNER JOIN product p ON p.productid = ti.productid;`);
+//   return rows;
+// };
 // Cannot update old transaction. Only add new ones
-exports.createNewTransaction = async (customerID, items) => {
-  /**
-   * customerID: number
-   * items: array of { productID, quantity }
-   */
-
+exports.createNewTransaction = async (customerID) => {
   try {
-    await pool.query("BEGIN");
-
-    // Insert new transaction
     const result = await pool.query(
       `INSERT INTO transactions (customerID)
        VALUES ($1)
        RETURNING transactionID`,
       [customerID]
     );
+    console.log(`Created transaction ID for user: ${customerID}`); 
+    const transactionID = result.rows[0].transactionid; 
+    return transactionID; 
+  } catch (err) {
+    console.log("Create transaction fail for user: ${customerID} ")
+    throw err; 
+  }
 
-    const transactionID = result.rows[0].transactionid;
+};
 
-    // Insert each item into transactionItems
-    for (const item of items) {
+exports.addProductToTransaction = async (customerID, product) => {
+  console.log(`Adding product ${product.productid}  for ${customerID}`); 
+  try {
+    await pool.query("BEGIN");
+    let transactionID; 
+
+    let currentTransaction = await pool.query(
+      `SELECT * FROM transactions WHERE transactions.customerID = ($1)`, [customerID]);
+    if (currentTransaction.rowCount === 0) {
+      transactionID = await exports.createNewTransaction(customerID);
+    }
+     else {
+      transactionID = currentTransaction.rows[0].transactionid; 
+    }
+    console.log("Current transactionID: " + transactionID); 
+
+    const existingItem = await pool.query(
+      `SELECT * FROM transactionItems 
+       WHERE transactionID = $1 AND productID = $2`,
+      [transactionID, product.productid]
+    );
+    if (existingItem.rowCount > 0) {
+      await pool.query(`UPDATE transactionItems SET quantity = quantity + 1
+        WHERE transactionID = $1 AND productID = $2`, [transactionID, product.productid]);
+        console.log("Increment quantity for item: " + product.productid);  
+    } else {
       await pool.query(
         `INSERT INTO transactionItems (transactionID, productID, quantity)
-         VALUES ($1, $2, $3)`,
-        [transactionID, item.productID, item.quantity]
+          VALUES ($1, $2, $3)`,
+        [transactionID, product.productid, 1]
       );
-
-      // Optional: decrease stock
-      await pool.query(
-        `UPDATE product SET stock = stock - $1 WHERE productID = $2`,
-        [item.quantity, item.productID]
-      );
+      console.log("Added new item into basket"); 
     }
 
+
+
+    // await pool.query(
+    //   `UPDATE product SET stock = stock - 1 WHERE productID = $1`,
+    //   [product.productid]
+    // );
+    
     await pool.query("COMMIT");
     return { transactionID };
   } catch (err) {
     await pool.query("ROLLBACK");
     throw err;
   }
-};
+}
 
+/**
+ * this function return an array of items that the current customer have
+ * @param {*} customerID 
+ * @returns 
+ */
+exports.getAllTransaction = async (customerID) => {
+  try {
+     const result = await pool.query(`
+      SELECT quantity, c.name AS categoryname, p.* FROM transactions t INNER JOIN transactionItems ti
+      ON t.transactionID = ti.transactionID
+      INNER JOIN product p ON p.productid = ti.productid 
+      INNER JOIN category c ON p.categoryid = c.categoryid
+      AND t.customerID = $1;`, [customerID]); 
+      return result.rows; 
+  } catch (err) {
+    throw err; 
+  }
+}
 
 exports.getProductListByID = async (cartIDs) => {
   if (!cartIDs || cartIDs.length === 0) return [];
 
-  // Keep only valid integers
-  const validIDs = cartIDs
-    .map(id => parseInt(id))
-    .filter(id => !isNaN(id));
+  const productCount = {}; 
+  cartIDs.forEach(cartID => {
+    if (productCount[cartID]) {
+      productCount[cartID]++; 
+    } else {
+      productCount[cartID] = 1; 
+    }
+  });
 
-  if (validIDs.length === 0) return [];
-
-  const placeholders = validIDs.map((_, i) => `$${i + 1}`).join(",");
+  const placeholders = cartIDs.map((_, i) => `$${i + 1}`).join(",");
   const query = `SELECT product.*, category.name AS categoryName, supplier.name AS supplierName
   FROM product
   INNER JOIN category ON product.categoryID = category.categoryID 
   INNER JOIN supplier ON product.supplierID = supplier.supplierID 
   WHERE productID IN (${placeholders})`;
 
-  const { rows } = await pool.query(query, validIDs);
+  const { rows } = await pool.query(query, cartIDs);
+  console.log(rows); 
+
+  rows.forEach(row => {
+    row.itemcount = productCount[row.productid]; 
+  });
   return rows;
 };
+
 exports.getCategoricalProduct = async (categoryName) => {
   const { rows } = await pool.query(
     `SELECT p.*, c.name AS category_name

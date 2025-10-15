@@ -5,7 +5,7 @@ import Shop from "./pages/Shop.jsx"
 import Cart from "./pages/Cart.jsx"
 import LogIn from "./pages/LogIn.jsx"
 import SignUp from "./pages/SignUp.jsx"
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import SearchResults from './pages/SearchResults.jsx';
 
 export default function App() {
@@ -29,6 +29,7 @@ export default function App() {
   }, []);
 
   function handleLogIn(userData) {
+    console.log("User: "+ JSON.stringify(userData)); 
     setUser(userData);
   }
 
@@ -47,45 +48,43 @@ export default function App() {
     <Router>
       <Routes>
         {/* Protected routes */}
-        <Route path="/" element={
-          user ? (
-            <HomePage user={user} onLogout={handleLogout} />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        } />
-        <Route path="/cart" element={
-          user ? (
-            <HomePage user={user} onLogout={handleLogout} />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        } />
-        <Route path="/search" element={
-          user ? (
-            <HomePage user={user} onLogout={handleLogout} />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        } />
-        
+        <Route
+          element={
+            user ? (
+              <ProtectedLayout user={user} onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        >
+          <Route path="/" element={<Shop user={user} />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/search" element={<SearchResults />} />
+        </Route>
+
         {/* Public routes */}
-        <Route path="/login" element={
-          user ? (
-            <Navigate to="/" replace />
-          ) : (
-            <LogIn onLogIn={handleLogIn} />
-          )
-        } />
-        <Route path="/signup" element={
-          user ? (
-            <Navigate to="/" replace />
-          ) : (
-            <SignUp onSignUp={handleLogIn} />
-          )
-        } />
+        <Route
+          path="/login"
+          element={user ? <Navigate to="/" replace /> : <LogIn onLogIn={handleLogIn} />}
+        />
+        <Route
+          path="/signup"
+          element={user ? <Navigate to="/" replace /> : <SignUp onSignUp={handleLogIn} />}
+        />
       </Routes>
     </Router>
+  );
+}
+
+function ProtectedLayout({ user, onLogout }) {
+  return (
+    <div>
+      <Navbar onLogut={onLogout}/>
+      <main>
+        {/* <button onClick={onLogout}>Logout</button> */}
+        <Outlet /> {/* This is where nested routes render */}
+      </main>
+    </div>
   );
 }
 
@@ -94,7 +93,7 @@ function HomePage({ user, onLogout }) {
     <div>
       <Navbar />
       <main>
-        <h1>Welcome back, {user.username}</h1>
+        {/* <h1>Welcome back, {user.username}</h1> */}
         <button onClick={onLogout}>Logout</button>
         
         <Routes>

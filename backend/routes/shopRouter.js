@@ -13,8 +13,8 @@ shopRouter.get("/search", shopController.searchProducts);
 shopRouter.post("/restock", shopController.restockPOST);
 
 // End points for user to buy stuff
-shopRouter.get("/buy", shopController.createTransactionGET); 
-shopRouter.post("/buy", shopController.createTransactionPOST); 
+// shopRouter.get("/buy", shopController.createTransactionGET); 
+// shopRouter.post("/buy", shopController.createTransactionPOST); 
 
 shopRouter.get("/cart", shopController.viewCart); 
 shopRouter.post("/cart/add", shopController.addToCart); 
@@ -22,4 +22,6 @@ shopRouter.post("/cart/add", shopController.addToCart);
 shopRouter.post("/sign-up", shopController.addUser); 
 shopRouter.post("/log-in", shopController.logIn); 
 
+
+shopRouter.get("/session", shopController.getSession); 
 module.exports = shopRouter;

@@ -12,22 +12,22 @@ exports.showShop = async (req, res, next) => {
     }
 };
 
-exports.createTransactionGET = async (req, res, next) => {
-    // return res.sendFile(path.join(__dirname, "../view/buy.ejs"));
-};
+// exports.createTransactionGET = async (req, res, next) => {
+//     // return res.sendFile(path.join(__dirname, "../view/buy.ejs"));
+// };
 
-exports.createTransactionPOST = async (req, res, next) => {
-    const { customerID, items } = req.body;
-    if (!customerID || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).send("Invalid transaction input!");
-    }
-    try {
-        await db.createNewTransaction(customerID, items);
-        return res.send("Transaction success!");
-    } catch (err) {
-        next(err);
-    }
-};
+// exports.createTransactionPOST = async (req, res, next) => {
+//     const { customerID, items } = req.body;
+//     if (!customerID || !Array.isArray(items) || items.length === 0) {
+//         return res.status(400).send("Invalid transaction input!");
+//     }
+//     try {
+//         await db.createNewTransaction(customerID, items);
+//         return res.send("Transaction success!");
+//     } catch (err) {
+//         next(err);
+//     }
+// };
 
 exports.restockPOST = async (req, res, next) => {
     console.log(`Restock request body: ${JSON.stringify(req.body)}`);
@@ -59,29 +59,26 @@ exports.searchProducts = async (req, res, next) => {
 };
 
 
-// LOGIC of cart: Items will be stored per session, via items id. 
-// Only when the user make the transaction, will the items with those id be deducted in stock.
-// add to cart
 exports.addToCart = async (req, res) => {
-    if (!req.session.cart) req.session.cart = [];
-    console.log(req.body); 
-    const { productId } = req.body;
-    req.session.cart.push(productId); 
-
-    res.json({ success: true, cartCount: req.session.cart.length });
+    try {
+        console.log("req.body: ", req.body); 
+        const { product } = req.body;
+        await db.addProductToTransaction(req.user.customerid, product); 
+        res.json({
+        success: true, message: "Product added to cart", 
+        itemAdded: product.productid});
+    } catch (err) {
+        console.error("Error adding to cart:", err);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
 };
 
-// view cart
 exports.viewCart = async (req, res) => {
-    const cartIDs = req.session.cart || []; 
-        // console.log('Session cart IDs:', cartIDs);
+    const products = await db.getAllTransaction(req.user.customerid); // return an array
 
-    if (cartIDs.length === 0) {
+    if (products.length === 0) {
         return res.status(200).json({products: []}); 
     }
-
-    const products = await db.getProductListByID(cartIDs)
-        // console.log('Products fetched:', products);
 
     res.status(200).json({ products });
 };
@@ -105,3 +102,11 @@ exports.logIn = async (req, res, next) => {
         });
     })(req, res, next);
 };
+
+exports.getSession = async (req, res, next) => {
+    if (req.isAuthenticated()) {
+        return res.json({ user: { customerID: req.user.customerID, username: req.user.username } });
+    } else {
+        return res.json({user: null}); 
+    }
+}

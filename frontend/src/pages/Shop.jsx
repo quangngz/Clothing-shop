@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import './pages.css'
 
-export default function Shop() {
+export default function Shop({user}) {
   const [products, setProducts] = useState([]);
 
   
@@ -16,6 +16,7 @@ export default function Shop() {
 
   return (
     <>
+    <h1>Welcome back, {user.username}</h1>
     <div className="products-grid">
       {Array.isArray(products) && products.length > 0 ? 
       (products.map(product => (ItemCard(product)))) : <p>Loading product...</p>}
@@ -25,14 +26,24 @@ export default function Shop() {
 }
 
 /** Function to handle adding item to card**/
-async function addToCart(productId) {
+async function addToCart(product) {
   const response = await fetch("http://localhost:5000/cart/add", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ productId }),
+    body: JSON.stringify({product}),
     credentials: "include"   // 🔑 important for session to work
   });
-
+  /*
+  {
+  "product": {
+    "productid": 42,
+    "name": "Running Shoes",
+    "price": 59.99,
+    "stock": 12,
+    "category": "Activewear"
+    }
+  }
+  */
   const contentType = response.headers.get('content-type'); 
   if (!contentType || !contentType.includes("application/json")) {
     throw new TypeError("Oops, we haven't got JSON!");
@@ -56,7 +67,7 @@ export function ItemCard (product) {
       <p><span>Size:</span>{product.size}</p>
       <p><span>Price:</span>${product.price}</p>
       <p><span>Stock:</span>{product.stock}</p>
-      <button id="add-to-cart-btn" onClick={() => addToCart(product.productid)}>
+      <button id="add-to-cart-btn" onClick={() => addToCart(product)}>
         Add to Cart
       </button>
     </div>

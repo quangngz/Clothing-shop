@@ -1,13 +1,14 @@
 const express = require("express"); 
-const path = require("path"); 
+const session = require("express-session");
 const shopRouter = require("./routes/shopRouter"); 
 const app = express(); 
 const PORT = process.env.PORT || 5000; 
-const session = require("express-session");
 const cors = require("cors"); 
 const passport = require("./db/passport");
+require("dotenv").config(); 
+
 app.use(session({
-  secret: "supersecret",
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { secure: false }  // must be false for HTTP (true requires HTTPS)
@@ -17,9 +18,11 @@ app.use(cors({
     credentials: true
 }));
 app.use(passport.initialize()); 
-app.use(passport.session())
+app.use(passport.session());
+
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
+
 app.use("/", shopRouter); 
 app.listen(PORT, (error) => {
     if (error) {
